@@ -3,14 +3,22 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"strings"
 	"os"
+	"strings"
+
+	"github.com/Thuvii/pokedeckcli/internal/pokeapi"
 )
+
+type config struct {
+	pokeapiClient       pokeapi.Client
+	nextLocationUrl     *string
+	previousLocationUrl *string
+}
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
 }
 
 func cleanInput(text string) []string {
@@ -19,45 +27,52 @@ func cleanInput(text string) []string {
 	return res
 }
 
-func startRepl() {
+func startRepl(cfg *config) {
 	scanner := bufio.NewScanner(os.Stdin)
-
 	for {
 		fmt.Print("Pokedex >")
 		scanner.Scan()
 		userInput := scanner.Text()
 		userInputClean := cleanInput(userInput)
-	  commandName := userInputClean[0]
-
-
-
-		command,exist := getCommand()[commandName]
-
-		if exist{
-		err := command.callback()
-		if err != nil {
-			fmt.Println(err)
+		if len(userInputClean) == 0 {
+			continue
 		}
-		continue
-		}else{
-		fmt.Println("Unknow command")
+		commandName := userInputClean[0]
+
+		command, exist := getCommand()[commandName]
+		if exist {
+			err := command.callback(cfg)
+			if err != nil {
+				fmt.Println(err)
+			}
+			continue
+		} else {
+			fmt.Println("Unknow command")
 		}
 	}
 }
 
-
-func getCommand() map[string]cliCommand{
-  return map[string]cliCommand{
-    "exit": {
-		    name:        "exit",
-		    description: "Exit the Pokedex",
-		    callback:    commandExit,
-	    },
-    "help": {
-		    name:        "help",
-	  	  description: "Display a help message",
-	    	callback:    commandHelp,
-    	},
-  	}
+func getCommand() map[string]cliCommand {
+	return map[string]cliCommand{
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+		"help": {
+			name:        "help",
+			description: "Display a help message",
+			callback:    commandHelp,
+		},
+		"map": {
+			name:        "mapf",
+			description: "Display 20 next location",
+			callback:    commandMapf,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Display 20 previous location",
+			callback:    commandMapb,
+		},
+	}
 }
-

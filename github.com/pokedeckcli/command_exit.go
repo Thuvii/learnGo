@@ -1,19 +1,19 @@
 package main
 
-import(
-  "fmt"
-  "os"
-  "time"
+import (
+	"fmt"
+	"os"
+	"time"
 )
 
-func commandExit() error {
-	loadingString := "Closing the Pokedex... "
-  for _, r := range loadingString {
+func commandExit(ac *config) error {
+	loadingString := "...\n"
+	for _, r := range loadingString {
 		fmt.Print(string(r))
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
-	fmt.Print("Goodbye!")
-  os.Exit(0)
+	fmt.Print("Closing the Pokedex...Goodbye!")
+	os.Exit(0)
 	return nil
 }

@@ -1,9 +1,15 @@
 package main
 
-// "bufio"
-// "fmt"
-// "os"
+import (
+	"time"
+
+	"github.com/Thuvii/pokedeckcli/internal/pokeapi"
+)
 
 func main() {
-	startRepl()
+	client := pokeapi.NewClient(5*time.Second, 5*time.Minute)
+	config := &config{
+		pokeapiClient: client,
+	}
+	startRepl(config)
 }
