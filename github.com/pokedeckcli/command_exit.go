@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func commandExit(ac *config) error {
+func commandExit(ac *config, area ...string) error {
 	loadingString := "...\n"
 	for _, r := range loadingString {
 		fmt.Print(string(r))
