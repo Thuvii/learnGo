@@ -9,7 +9,7 @@ type LocationStruct struct {
 		URL  string `json:"url"`
 	} `json:"results"`
 }
-type PokeStruct struct {
+type EncounterStruct struct {
 	EncounterMethodRates []struct {
 		EncounterMethod struct {
 			Name string `json:"name"`

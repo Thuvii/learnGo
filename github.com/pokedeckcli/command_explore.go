@@ -1,14 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 func commandExplore(cfg *config, area ...string) error {
 
 	if len(area) < 1 {
-		fmt.Println("Please choose area you want to explore")
+		return errors.New("Please choose area you want to explore")
 	}
 
-	pokelist, err := cfg.pokeapiClient.ListPokeArea(area[0])
+	pokelist, err := cfg.pokeapiClient.ListPokebyArea(area[0])
 	if err != nil {
 		return err
 	}
