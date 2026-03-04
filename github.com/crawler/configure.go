@@ -32,7 +32,7 @@ func (cfg *config) setPageData(normalizedURL string, data PageData) {
 	cfg.pages[normalizedURL] = data
 }
 
-func configure(rawBaseURL string, maxPages, maxConcurrency int) (*config, error) {
+func configure(rawBaseURL string, maxConcurrency, maxPages int) (*config, error) {
 	baseURL, err := url.Parse(rawBaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't parse base URL: %v", err)

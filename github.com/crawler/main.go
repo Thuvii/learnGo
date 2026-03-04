@@ -36,10 +36,9 @@ func main() {
 	config.wg.Add(1)
 	go config.crawlPage(rawBaseURL)
 	config.wg.Wait()
-	i := 0
-	for value, key := range config.pages {
-		i++
-		fmt.Printf("%v - %v\n", value, key.URL)
+
+	for url, data := range config.pages {
+		fmt.Printf("%s - %s\n", url, data.URL)
 	}
-	fmt.Print(i)
+	writeJSONReport(config.pages, "report.json")
 }
