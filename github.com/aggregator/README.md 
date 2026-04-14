@@ -1,6 +1,6 @@
 # Gator CLI
 
-Gator is a command-line RSS feed aggregator built in Go. It allows users to register accounts, subscribe to RSS feeds, and follow updates from their favorite sites directly from the terminal.
+gator is a command-line RSS feed aggregator built in Go. It allows users to register accounts, subscribe to RSS feeds, and follow updates from their favorite sites directly from the terminal.
 
 ## Prerequisites
 
