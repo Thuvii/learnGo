@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/Thuvii/aggregator/internal/database"
@@ -13,6 +15,13 @@ import (
 func printUser(user database.User) {
 	fmt.Printf(" * ID:      %v\n", user.ID)
 	fmt.Printf(" * Name:    %v\n", user.Name)
+}
+
+func printFeed(feed database.Feed, user database.User) {
+	fmt.Println("------------------------------")
+	fmt.Printf(" * UserCreatedFeed:    %v\n", user.Name)
+	fmt.Printf(" * Name:    %v\n", feed.Name)
+	fmt.Printf(" * Url:    %v\n", feed.Url)
 }
 
 // Login
@@ -85,6 +94,183 @@ func handlerGet(s *state, cmd command) error {
 
 			fmt.Printf(" * Name:    %v\n", user.Name)
 		}
+	}
+	return nil
+}
+
+// aggregator handler
+
+func handleAgg(s *state, cmd command) error {
+	if cmd.Args == nil || len(cmd.Args) != 1 {
+		return fmt.Errorf("need a time duration: 1h, 1m, 1s, ...")
+	}
+	duration := cmd.Args[0]
+
+	timeDuration, err := time.ParseDuration(duration)
+	if err != nil {
+		return err
+	}
+	ticker := time.NewTicker(timeDuration)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+
+		go func() {
+			end := time.Now().Add(timeDuration)
+			for time.Now().Before(end) {
+				remaining := time.Until(end).Round(time.Second)
+				fmt.Printf("\rNext fetch in: %s   ", remaining)
+				time.Sleep(time.Second)
+			}
+			fmt.Print("\r")
+		}()
+		fmt.Printf("Collecting feeds every %s\n", timeDuration)
+	}
+	return nil
+
+}
+
+// addfeed handler
+func handleAddFeed(s *state, cmd command, user database.User) error {
+	if cmd.Args == nil || len(cmd.Args) != 2 {
+		return fmt.Errorf("Addfeed require 2 args!")
+	}
+
+	feedname := cmd.Args[0]
+	feedurl := cmd.Args[1]
+	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
+		ID:            uuid.New(),
+		UpdatedAt:     time.Now(),
+		LastFetchedAt: sql.NullTime{Valid: false},
+		Name:          feedname,
+		Url:           feedurl,
+		UserID:        user.ID,
+	})
+	if err != nil {
+		return err
+	}
+	follow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	if err != nil {
+		return err
+	}
+
+	printFeed(feed, user)
+	fmt.Println("Following: ")
+	fmt.Printf(" * FeedName:    %v\n", follow.FeedName)
+	fmt.Println("------------------------------")
+	return nil
+}
+
+//feeds handler
+
+func handlListFeeds(s *state, cmd command) error {
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		return err
+	}
+	if len(feeds) == 0 {
+		fmt.Println("No feeds found.")
+		return nil
+	}
+	for _, feed := range feeds {
+		user, err := s.db.GetUserByID(context.Background(), feed.UserID)
+		if err != nil {
+			return fmt.Errorf("cannot get user by id, %v", err)
+		}
+		printFeed(feed, user)
+
+	}
+	return nil
+}
+
+// handler create/add follow
+
+func handleFollow(s *state, cmd command, user database.User) error {
+	if cmd.Args == nil || len(cmd.Args) != 1 {
+		return fmt.Errorf("need 1 feed url")
+	}
+	url := cmd.Args[0]
+	feed, err := s.db.GetFeedByURL(context.Background(), url)
+	if err != nil {
+		return err
+	}
+	follow, err := s.db.CreateFeedFollow(context.Background(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    user.ID,
+		FeedID:    feed.ID,
+	})
+	fmt.Println("Following: ")
+	fmt.Printf(" * Username:    %v\n", follow.UserName)
+	fmt.Printf(" * FeedName:    %v\n", follow.FeedName)
+	return nil
+}
+
+// handler list feed followed
+
+func handleListFollows(s *state, cmd command, user database.User) error {
+	follows, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err != nil {
+		return err
+	}
+	fmt.Printf(" * Username:    %v\n", user.Name)
+	fmt.Println("------------------------------")
+	for i, follow := range follows {
+		fmt.Printf("%v. FeedName:    %v\n", i+1, follow.FeedName)
+	}
+	fmt.Println("------------------------------")
+	return nil
+}
+
+// unfollow
+func handlerUnfollow(s *state, cmd command, user database.User) error {
+	if cmd.Args == nil || len(cmd.Args) > 1 {
+		return fmt.Errorf("need 1 feed url")
+	}
+	url := cmd.Args[0]
+	feed, err := s.db.GetFeedByURL(context.Background(), url)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.UnfollowFeed(context.Background(), database.UnfollowFeedParams{
+		UserID: user.ID,
+		FeedID: feed.ID,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command, user database.User) error {
+	var err error
+	limit := 0
+	if cmd.Args == nil || len(cmd.Args) != 1 {
+		limit = 2
+	} else {
+		limit, err = strconv.Atoi(cmd.Args[0])
+		if err != nil {
+			return err
+		}
+	}
+
+	data, err := s.db.GetPostsForUser(context.Background(), database.GetPostsForUserParams{
+		UserID: user.ID,
+		Limit:  int32(limit),
+	})
+
+	if err != nil {
+		return err
+	}
+	for _, post := range data {
+		fmt.Println(post.Title)
 	}
 	return nil
 }

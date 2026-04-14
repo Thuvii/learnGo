@@ -1,0 +1,14 @@
+# Gator CLI
+
+Gator is a command-line RSS feed aggregator built in Go. It allows users to register accounts, subscribe to RSS feeds, and follow updates from their favorite sites directly from the terminal.
+
+## Prerequisites
+
+Before running Gator, ensure you have the following installed on your system:
+
+* **Go**: Version 1.21 or higher. [Download Go](https://go.dev/dl/)
+* **PostgreSQL**: A running Postgres instance. [Download PostgreSQL](https://www.postgresql.org/download/)
+
+## Installation
+
+You can install the `gator` CLI directly using the `go install` command. This will compile the binary and place it in your `$GOPATH/bin` directory.
